@@ -19,8 +19,12 @@ type Msg
     | ReceiveTime Time.Posix
 
 
+type alias Title =
+    String
+
+
 type alias Model =
-    { title : String
+    { title : Maybe Title
     , body : String
     , author : String
     , timestamp : Maybe Time.Posix
@@ -31,6 +35,14 @@ type alias Flags =
     {}
 
 
+type alias Article =
+    { title : Title
+    , body : String
+    , author : String
+    , timestamp : Time.Posix
+    }
+
+
 main : Program Flags Model Msg
 main =
     Browser.element { init = init, update = update, view = view, subscriptions = subscriptions }
@@ -38,7 +50,7 @@ main =
 
 init : Flags -> ( Model, Cmd Msg )
 init _ =
-    ( { title = ""
+    ( { title = Nothing
       , body = ""
       , author = "Kaka Dudu"
       , timestamp = Nothing
@@ -54,7 +66,7 @@ update msg model =
             ( { model | timestamp = Just time }, Cmd.none )
 
         ChangeTitle title_ ->
-            ( { model | title = title_ }, Cmd.none )
+            ( { model | title = Just title_ }, Cmd.none )
 
         ChangeBody body_ ->
             ( { model | body = body_ }, Cmd.none )
@@ -66,7 +78,7 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div [ class "static" ]
-        [ div [ class "absolute bottom-0 left-0 border-t border-gray-300 w-full bg-white py-4 px-4" ] [ draftLink model ]
+        [ div [ class "absolute bottom-0 left-0 border-t border-gray-300 w-full bg-white py-4 px-4" ] [ draftLink (getArticle model) ]
         , div [ class "grid grid-cols-2 gap-4" ]
             [ div [ class "py-16 px-10" ]
                 [ div
@@ -108,28 +120,55 @@ view model =
                 ]
             , div [ class "py-16 px-10 bg-gray-200 min-h-screen" ]
                 [ pre [ class "text-sm" ]
-                    [ text (articlePreview model) ]
+                    [ text (articlePreview (getArticle model)) ]
                 ]
             ]
         ]
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.none
 
 
-draftLink model =
-    case model.timestamp of
+draftLink : Maybe Article -> Html Msg
+draftLink article =
+    case article of
         Nothing ->
             a [ disabled True ] [ text "Draft Article" ]
 
-        Just time ->
+        Just article_ ->
             a
-                [ href (articleUrl (filename model.title time) (rawArticle model))
+                [ href (articleUrl (filename article_) (rawArticleContent article_))
                 , class "bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
                 ]
                 [ text "Draft Article" ]
+
+
+articlePreview : Maybe Article -> String
+articlePreview article =
+    case article of
+        Nothing ->
+            "try again"
+
+        Just article_ ->
+            String.join "\n"
+                [ filename article_
+                , rawArticleContent article_
+                ]
+
+
+getArticle : Model -> Maybe Article
+getArticle { title, timestamp, author, body } =
+    case ( title, timestamp ) of
+        ( _, Nothing ) ->
+            Nothing
+
+        ( Nothing, _ ) ->
+            Nothing
+
+        ( Just title_, Just timestamp_ ) ->
+            Just { title = title_, timestamp = timestamp_, author = author, body = body }
 
 
 articleUrl : String -> String -> String
@@ -141,21 +180,8 @@ articleUrl filename_ content =
         ]
 
 
-articlePreview : Model -> String
-articlePreview model =
-    case model.timestamp of
-        Nothing ->
-            ""
-
-        Just time ->
-            "# "
-                ++ filename model.title time
-                ++ "\n\n"
-                ++ rawArticle model
-
-
-rawArticle : Model -> String
-rawArticle model =
+rawArticleContent : Article -> String
+rawArticleContent article =
     let
         yamlFrontMatterTemplate time =
             template ""
@@ -174,22 +200,16 @@ publish: false
 ---
 
 """
+
+        articleTemplate =
+            yamlFrontMatterTemplate article.timestamp
+                |> withValue .body
     in
-    case model.timestamp of
-        Nothing ->
-            ""
-
-        Just time ->
-            let
-                articleTemplate =
-                    yamlFrontMatterTemplate time
-                        |> withValue .body
-            in
-            render model articleTemplate
+    render article articleTemplate
 
 
-filename : String -> Time.Posix -> String
-filename title timestamp =
+filename : Article -> String
+filename { timestamp } =
     String.join "-"
         [ Date.toIsoString (Date.fromPosix utc timestamp)
         , "something-something"
