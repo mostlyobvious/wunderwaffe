@@ -23,10 +23,14 @@ type alias Title =
     String
 
 
+type alias Author =
+    String
+
+
 type alias Model =
     { title : Maybe Title
     , body : String
-    , author : String
+    , author : Maybe Author
     , timestamp : Maybe Time.Posix
     }
 
@@ -38,7 +42,7 @@ type alias Flags =
 type alias Article =
     { title : Title
     , body : String
-    , author : String
+    , author : Author
     , timestamp : Time.Posix
     }
 
@@ -52,7 +56,7 @@ init : Flags -> ( Model, Cmd Msg )
 init _ =
     ( { title = Nothing
       , body = ""
-      , author = "Kaka Dudu"
+      , author = Nothing
       , timestamp = Nothing
       }
     , Time.now |> Task.perform ReceiveTime
@@ -72,7 +76,7 @@ update msg model =
             ( { model | body = body_ }, Cmd.none )
 
         ChangeAuthor author_ ->
-            ( { model | author = author_ }, Cmd.none )
+            ( { model | author = Just author_ }, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -160,15 +164,12 @@ articlePreview article =
 
 getArticle : Model -> Maybe Article
 getArticle { title, timestamp, author, body } =
-    case ( title, timestamp ) of
-        ( _, Nothing ) ->
-            Nothing
+    case ( title, timestamp, author ) of
+        ( Just title_, Just timestamp_, Just author_ ) ->
+            Just { title = title_, timestamp = timestamp_, author = author_, body = body }
 
-        ( Nothing, _ ) ->
+        ( _, _, _ ) ->
             Nothing
-
-        ( Just title_, Just timestamp_ ) ->
-            Just { title = title_, timestamp = timestamp_, author = author, body = body }
 
 
 articleUrl : String -> String -> String
