@@ -126,7 +126,7 @@ draftLink model =
 
         Just time ->
             a
-                [ href (articleUrl (filename model.title time) (article model))
+                [ href (articleUrl (filename model.title time) (rawArticle model))
                 , class "bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
                 ]
                 [ text "Draft Article" ]
@@ -151,11 +151,30 @@ articlePreview model =
             "# "
                 ++ filename model.title time
                 ++ "\n\n"
-                ++ article model
+                ++ rawArticle model
 
 
-article : Model -> String
-article model =
+rawArticle : Model -> String
+rawArticle model =
+    let
+        yamlFrontMatterTemplate time =
+            template ""
+                |> withString """---
+title: """
+                |> withValue .title
+                |> withString """
+created_at: """
+                |> withString (Iso8601.fromTime time)
+                |> withString """
+author: """
+                |> withValue .author
+                |> withString """
+tags: []
+publish: false
+---
+
+"""
+    in
     case model.timestamp of
         Nothing ->
             ""
@@ -163,16 +182,7 @@ article model =
         Just time ->
             let
                 articleTemplate =
-                    template "---"
-                        |> withString "\ntitle: "
-                        |> withValue .title
-                        |> withString ("\ncreated_at: " ++ Iso8601.fromTime time)
-                        |> withString "\nauthor: "
-                        |> withValue .author
-                        |> withString "\ntags: []"
-                        |> withString "\npublish: false"
-                        |> withString "\n---"
-                        |> withString "\n\n"
+                    yamlFrontMatterTemplate time
                         |> withValue .body
             in
             render model articleTemplate
