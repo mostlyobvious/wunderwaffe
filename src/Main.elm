@@ -64,6 +64,14 @@ init _ =
     )
 
 
+updateString string =
+    if String.isEmpty string then
+        Nothing
+
+    else
+        Just string
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -71,13 +79,13 @@ update msg model =
             ( { model | timestamp = Just time }, Cmd.none )
 
         ChangeTitle title_ ->
-            ( { model | title = Just title_ }, Cmd.none )
+            ( { model | title = updateString title_ }, Cmd.none )
 
         ChangeBody body_ ->
             ( { model | body = body_ }, Cmd.none )
 
         ChangeAuthor author_ ->
-            ( { model | author = Just author_ }, Cmd.none )
+            ( { model | author = updateString author_ }, Cmd.none )
 
 
 view : Model -> Html Msg
