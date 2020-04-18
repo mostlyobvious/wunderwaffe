@@ -1,4 +1,4 @@
-module Main exposing (init, main)
+module Main exposing (init, main, normalize)
 
 import Browser
 import Date
@@ -6,6 +6,7 @@ import Html exposing (Html, a, div, input, label, pre, text, textarea)
 import Html.Attributes exposing (class, disabled, href)
 import Html.Events exposing (onInput)
 import Iso8601
+import String.Extra
 import Task
 import Template exposing (render, template, withString, withValue)
 import Time exposing (now, utc)
@@ -221,4 +222,19 @@ filename { timestamp, title } =
 
 normalize : String -> String
 normalize title =
-    "something-something"
+    title
+        |> String.trim
+        |> String.toLower
+        |> String.replace "?" ""
+        |> String.replace "!" ""
+        |> String.replace "#" ""
+        |> String.replace "(" ""
+        |> String.replace ")" ""
+        |> String.replace "'" ""
+        |> String.replace "," " "
+        |> String.replace "+" " plus "
+        |> String.replace "/" " slash "
+        |> String.replace "." " dot "
+        |> String.replace "%" " percent "
+        |> String.Extra.clean
+        |> String.replace " " "-"
