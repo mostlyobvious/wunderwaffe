@@ -13,14 +13,15 @@ type Msg
     | ChangeBody String
     | ChangeAuthor String
 
-
 type alias Model =
     { filename : String
     , title : String
     , body : String
     , author : String
-    , createdAt : String
+    , timestamp : String
     }
+
+
 
 main : Program () Model Msg
 main =
@@ -67,7 +68,7 @@ article model =
             template |> withString "\ntitle: " |> withValue .title
 
         createdAt template =
-            template |> withString "\ncreated_at: " |> withValue .createdAt
+            template |> withString "\ncreated_at: " |> withValue .timestamp
 
         body template =
             template |> withString "\n\n" |> withValue .body
@@ -81,7 +82,7 @@ init =
     , title = ""
     , body = ""
     , author = "Kaka Dudu"
-    , createdAt = "2020-04-17 18:22:48 +0200"
+    , timestamp = "2020-04-17 18:22:48 +0200"
     }
 
 
