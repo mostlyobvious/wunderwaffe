@@ -210,9 +210,15 @@ publish: false
 
 
 filename : Article -> String
-filename { timestamp } =
-    String.join "-"
+filename { timestamp, title } =
+    String.join ""
         [ Date.toIsoString (Date.fromPosix utc timestamp)
-        , "something-something"
+        , "-"
+        , normalize title
         , ".md"
         ]
+
+
+normalize : String -> String
+normalize title =
+    "something-something"
