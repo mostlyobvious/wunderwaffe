@@ -2,7 +2,7 @@
   "private": true,
   "scripts": {
     "start": "parcel index.html",
-    "build": "parcel build index.html"
+    "build": "parcel build --public-url /dashboard/new/ index.html"
   },
   "devDependencies": {
     "elm-hot": "^1.1.4",

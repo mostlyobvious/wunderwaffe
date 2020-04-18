@@ -185,7 +185,7 @@ articleUrl : String -> String -> String
 articleUrl filename_ content =
     crossOrigin "https://github.com"
         [ "arkency", "posts", "new", "master", "posts" ]
-        [ string "filename" filename_
+        [ string "filename" (String.join "/" [ "posts", filename_ ])
         , string "value" content
         ]
 
