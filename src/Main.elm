@@ -15,8 +15,7 @@ type Msg
 
 
 type alias Model =
-    { filename : String
-    , title : String
+    { title : String
     , body : String
     , author : String
     , timestamp : String
@@ -34,8 +33,7 @@ main =
 
 init : Flags -> ( Model, Cmd Msg )
 init _ =
-    ( { filename = "2020-04-17-something-something.md"
-      , title = ""
+    ( { title = ""
       , body = ""
       , author = "Kaka Dudu"
       , timestamp = "2020-04-17 18:22:48 +0200"
@@ -123,14 +121,17 @@ articleUrl : Model -> String
 articleUrl model =
     crossOrigin "https://github.com"
         [ "arkency", "posts", "new", "master", "posts" ]
-        [ string "filename" model.filename
+        [ string "filename" (filename model)
         , string "value" (article model)
         ]
 
 
 articlePreview : Model -> String
 articlePreview model =
-    "# " ++ model.filename ++ "\n\n" ++ article model
+    "# "
+        ++ filename model
+        ++ "\n\n"
+        ++ article model
 
 
 article : Model -> String
@@ -165,3 +166,7 @@ article model =
             template |> withString "\n\n" |> withValue .body
     in
     render model articleTemplate
+
+
+filename model =
+    "2020-04-17-something-something.md"
