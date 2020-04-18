@@ -13,6 +13,7 @@ type Msg
     | ChangeBody String
     | ChangeAuthor String
 
+
 type alias Model =
     { filename : String
     , title : String
@@ -22,81 +23,38 @@ type alias Model =
     }
 
 
+type alias Flags =
+    {}
 
-main : Program () Model Msg
+
+main : Program Flags Model Msg
 main =
-    Browser.sandbox { init = init, update = update, view = view }
+    Browser.element { init = init, update = update, view = view, subscriptions = subscriptions }
 
 
-articleUrl : Model -> String
-articleUrl model =
-    crossOrigin "https://github.com"
-        [ "arkency", "posts", "new", "master", "posts" ]
-        [ string "filename" model.filename
-        , string "value" (article model)
-        ]
+init : Flags -> ( Model, Cmd Msg )
+init _ =
+    ( { filename = "2020-04-17-something-something.md"
+      , title = ""
+      , body = ""
+      , author = "Kaka Dudu"
+      , timestamp = "2020-04-17 18:22:48 +0200"
+      }
+    , Cmd.none
+    )
 
 
-articlePreview : Model -> String
-articlePreview model =
-    "# " ++ model.filename ++ "\n\n" ++ article model
-
-
-article : Model -> String
-article model =
-    let
-        articleTemplate =
-            template "---"
-                |> title
-                |> createdAt
-                |> author
-                |> tags
-                |> publish
-                |> withString "\n---"
-                |> body
-
-        publish template =
-            template |> withString "\npublish: false"
-
-        tags template =
-            template |> withString "\ntags: []"
-
-        author template =
-            template |> withString "\nauthor: " |> withValue .author
-
-        title template =
-            template |> withString "\ntitle: " |> withValue .title
-
-        createdAt template =
-            template |> withString "\ncreated_at: " |> withValue .timestamp
-
-        body template =
-            template |> withString "\n\n" |> withValue .body
-    in
-    render model articleTemplate
-
-
-init : Model
-init =
-    { filename = "2020-04-17-something-something.md"
-    , title = ""
-    , body = ""
-    , author = "Kaka Dudu"
-    , timestamp = "2020-04-17 18:22:48 +0200"
-    }
-
-
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ChangeTitle title_ ->
-            { model | title = title_ }
+            ( { model | title = title_ }, Cmd.none )
 
         ChangeBody body_ ->
-            { model | body = body_ }
+            ( { model | body = body_ }, Cmd.none )
 
         ChangeAuthor author_ ->
-            { model | author = author_ }
+            ( { model | author = author_ }, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -154,3 +112,56 @@ view model =
                 ]
             ]
         ]
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.none
+
+
+articleUrl : Model -> String
+articleUrl model =
+    crossOrigin "https://github.com"
+        [ "arkency", "posts", "new", "master", "posts" ]
+        [ string "filename" model.filename
+        , string "value" (article model)
+        ]
+
+
+articlePreview : Model -> String
+articlePreview model =
+    "# " ++ model.filename ++ "\n\n" ++ article model
+
+
+article : Model -> String
+article model =
+    let
+        articleTemplate =
+            template "---"
+                |> title
+                |> createdAt
+                |> author
+                |> tags
+                |> publish
+                |> withString "\n---"
+                |> body
+
+        publish template =
+            template |> withString "\npublish: false"
+
+        tags template =
+            template |> withString "\ntags: []"
+
+        author template =
+            template |> withString "\nauthor: " |> withValue .author
+
+        title template =
+            template |> withString "\ntitle: " |> withValue .title
+
+        createdAt template =
+            template |> withString "\ncreated_at: " |> withValue .timestamp
+
+        body template =
+            template |> withString "\n\n" |> withValue .body
+    in
+    render model articleTemplate
