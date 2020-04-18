@@ -1,10 +1,14 @@
 module Main exposing (init, main)
 
 import Browser
+import Date
 import Html exposing (Html, a, div, input, label, pre, text, textarea)
-import Html.Attributes exposing (class, href)
+import Html.Attributes exposing (class, disabled, href)
 import Html.Events exposing (onInput)
+import Iso8601
+import Task
 import Template exposing (render, template, withString, withValue)
+import Time exposing (now, utc)
 import Url.Builder exposing (crossOrigin, string)
 
 
@@ -12,13 +16,14 @@ type Msg
     = ChangeTitle String
     | ChangeBody String
     | ChangeAuthor String
+    | ReceiveTime Time.Posix
 
 
 type alias Model =
     { title : String
     , body : String
     , author : String
-    , timestamp : String
+    , timestamp : Maybe Time.Posix
     }
 
 
@@ -36,15 +41,18 @@ init _ =
     ( { title = ""
       , body = ""
       , author = "Kaka Dudu"
-      , timestamp = "2020-04-17 18:22:48 +0200"
+      , timestamp = Nothing
       }
-    , Cmd.none
+    , Time.now |> Task.perform ReceiveTime
     )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ReceiveTime time ->
+            ( { model | timestamp = Just time }, Cmd.none )
+
         ChangeTitle title_ ->
             ( { model | title = title_ }, Cmd.none )
 
@@ -58,13 +66,7 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div [ class "static" ]
-        [ div [ class "absolute bottom-0 left-0 border-t border-gray-300 w-full bg-white py-4 px-4" ]
-            [ a
-                [ href (articleUrl model)
-                , class "bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
-                ]
-                [ text "Draft Article" ]
-            ]
+        [ div [ class "absolute bottom-0 left-0 border-t border-gray-300 w-full bg-white py-4 px-4" ] [ draftLink model ]
         , div [ class "grid grid-cols-2 gap-4" ]
             [ div [ class "py-16 px-10" ]
                 [ div
@@ -117,56 +119,69 @@ subscriptions model =
     Sub.none
 
 
-articleUrl : Model -> String
-articleUrl model =
+draftLink model =
+    case model.timestamp of
+        Nothing ->
+            a [ disabled True ] [ text "Draft Article" ]
+
+        Just time ->
+            a
+                [ href (articleUrl (filename model.title time) (article model))
+                , class "bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
+                ]
+                [ text "Draft Article" ]
+
+
+articleUrl : String -> String -> String
+articleUrl filename_ content =
     crossOrigin "https://github.com"
         [ "arkency", "posts", "new", "master", "posts" ]
-        [ string "filename" (filename model)
-        , string "value" (article model)
+        [ string "filename" filename_
+        , string "value" content
         ]
 
 
 articlePreview : Model -> String
 articlePreview model =
-    "# "
-        ++ filename model
-        ++ "\n\n"
-        ++ article model
+    case model.timestamp of
+        Nothing ->
+            ""
+
+        Just time ->
+            "# "
+                ++ filename model.title time
+                ++ "\n\n"
+                ++ article model
 
 
 article : Model -> String
 article model =
-    let
-        articleTemplate =
-            template "---"
-                |> title
-                |> createdAt
-                |> author
-                |> tags
-                |> publish
-                |> withString "\n---"
-                |> body
+    case model.timestamp of
+        Nothing ->
+            ""
 
-        publish template =
-            template |> withString "\npublish: false"
-
-        tags template =
-            template |> withString "\ntags: []"
-
-        author template =
-            template |> withString "\nauthor: " |> withValue .author
-
-        title template =
-            template |> withString "\ntitle: " |> withValue .title
-
-        createdAt template =
-            template |> withString "\ncreated_at: " |> withValue .timestamp
-
-        body template =
-            template |> withString "\n\n" |> withValue .body
-    in
-    render model articleTemplate
+        Just time ->
+            let
+                articleTemplate =
+                    template "---"
+                        |> withString "\ntitle: "
+                        |> withValue .title
+                        |> withString ("\ncreated_at: " ++ Iso8601.fromTime time)
+                        |> withString "\nauthor: "
+                        |> withValue .author
+                        |> withString "\ntags: []"
+                        |> withString "\npublish: false"
+                        |> withString "\n---"
+                        |> withString "\n\n"
+                        |> withValue .body
+            in
+            render model articleTemplate
 
 
-filename model =
-    "2020-04-17-something-something.md"
+filename : String -> Time.Posix -> String
+filename title timestamp =
+    String.join "-"
+        [ Date.toIsoString (Date.fromPosix utc timestamp)
+        , "something-something"
+        , ".md"
+        ]
